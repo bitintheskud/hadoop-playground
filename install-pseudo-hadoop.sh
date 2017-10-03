@@ -107,4 +107,4 @@ chmod -R 777 /usr/share/hadoop
 #  Run the built in Pi Estimator example included with the Hadoop release.
 
 cd $HADOOP_HOME
-sudo -u hdfs bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.2.jar pi 16 1000 
+sudo -u hdfs bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 
