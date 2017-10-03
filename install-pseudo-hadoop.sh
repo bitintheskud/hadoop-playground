@@ -13,6 +13,11 @@ hadoop_vers="2.7.4"
 
 hostnamectl set-hostname hadoopnode0
 
+# Update 
+
+yum update -y 
+yum install -y wget sudo 
+
 #  Disable SELinux (this is known to cause issues with Hadoop):
 
 cp /etc/selinux/config /etc/selinux/config.orig
@@ -51,6 +56,7 @@ fi
 
 JAVA_BIN="$(readlink /etc/alternatives/java)"
 export JAVA_HOME="$(dirname ${JAVA_BIN%/*})"
+echo "export JAVA_HOME=${JAVA_HOME}" >> /root/.bashrc
 
 # Download Hadoop 
 #
@@ -107,4 +113,5 @@ chmod -R 777 /usr/share/hadoop
 #  Run the built in Pi Estimator example included with the Hadoop release.
 
 cd $HADOOP_HOME
-sudo -u hdfs bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 
+sudo -u hdfs bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 | grep 'Estimated value of Pi is 3.142' > /dev/null 2>&1
+return $?
