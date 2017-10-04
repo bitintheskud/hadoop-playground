@@ -1,22 +1,23 @@
 #! /bin/bash
-# 
+#
 # Author : @bitintheskud - Alban MUSSI
 # largely inspired from the book "Sams Teach Yourself Hadoop in 24 Hours"
 # Thanks to Jeffrey Aven :)
 #
-# run as root on freshly install test server with centos > 7.4 
-# this is a f***ing lab script to play around with hadoop. 
+# run as root on freshly install test server with centos > 7.4
+# this is a f***ing lab script to play around with hadoop.
 # DO NOT RUN that in production or you'll be damn for eternity (and surely fired).
 #
 java_vers="1.8.0"
 hadoop_vers="2.7.4"
 
+# do not change the hostname. It will be use later for hdfs command.
 hostnamectl set-hostname hadoopnode0
 
-# Update 
+# Update
 
-yum update -y 
-yum install -y wget sudo 
+yum update -y
+yum install -y wget sudo
 
 #  Disable SELinux (this is known to cause issues with Hadoop):
 
@@ -47,7 +48,7 @@ yum install -y java-${java_vers}
 java -version > /dev/null
 if [ $? -ne 0 ] ; then
     echo "java is not working as exepected. Please check"
-    echo "command :  java -version" 
+    echo "command :  java -version"
     echo "bye..."
     exit 1
 fi
@@ -58,7 +59,7 @@ JAVA_BIN="$(readlink /etc/alternatives/java)"
 export JAVA_HOME="$(dirname ${JAVA_BIN%/*})"
 echo "export JAVA_HOME=${JAVA_HOME}" >> /root/.bashrc
 
-# Download Hadoop 
+# Download Hadoop
 #
 apache_mirror_url="http://mirrors.standaloneinstaller.com/apache/hadoop/common/hadoop-${hadoop_vers}/"
 wget -q "${apache_mirror_url}"/hadoop-${hadoop_vers}.tar.gz
@@ -68,14 +69,14 @@ wget -q "${apache_mirror_url}"/hadoop-${hadoop_vers}.tar.gz
 
 if [ -f hadoop-${hadoop_vers}.tar.gz ] ; then
     tar -xf hadoop-${hadoop_vers}.tar.gz
-    mv hadoop-${hadoop_vers} /usr/share/ 
+    mv hadoop-${hadoop_vers} /usr/share/
     ln -s /usr/share/hadoop-${hadoop_vers} /usr/share/hadoop && export HADOOP_HOME=/usr/share/hadoop
     echo "Done : download & untar hadoop in ${HADOOP_HOME}"
 else
     echo "wget has failed. Try manualy : "
-    echo "    wget "${apache_mirror_url}"/hadoop-${hadoop_vers}.tar.gz" 
+    echo "    wget "${apache_mirror_url}"/hadoop-${hadoop_vers}.tar.gz"
     exit 1
-fi 
+fi
 
 
 # Create a directory which we will use as an alternative to the Hadoop configuration directory
