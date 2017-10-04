@@ -1,15 +1,29 @@
 #! /bin/bash
 #
-# Author : @bitintheskud - Alban MUSSI
+# Author : @bitintheskud
+# Date   : 4 oct 2017
 # largely inspired from the book "Sams Teach Yourself Hadoop in 24 Hours"
 # Thanks to Jeffrey Aven :)
 #
 # run as root on freshly install test server with centos > 7.4
-# this is a f***ing lab script to play around with hadoop.
+# this is lab script to play around with hadoop.
 # DO NOT RUN that in production or you'll be damn for eternity (and surely fired).
+
+
+***************************************************************
 #
+# /!\ THIS SCRIPT IS STILL IN DEVELOPMENT. DO NOT USE /!\
+#
+# To do :
+# 1. create an autoextract script. see https://github.com/megastep/makeself
+# 2. add copie etc/*.xml to hadoop conf dir
+# 3. test
+***************************************************************
+
 java_vers="1.8.0"
 hadoop_vers="2.7.4"
+username="billythekid"
+
 
 # do not change the hostname. It will be use later for hdfs command.
 hostnamectl set-hostname hadoopnode0
@@ -113,6 +127,47 @@ chmod -R 777 /usr/share/hadoop
 
 #  Run the built in Pi Estimator example included with the Hadoop release.
 
-cd $HADOOP_HOME
+cd ${HADOOP_HOME}
+
 sudo -u hdfs bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 | grep 'Estimated value of Pi is 3.142' > /dev/null 2>&1
-return $?
+if [ $? -ne 0 ] ; then
+  echo "Hadoop test successfully tested !"
+else
+  echo "Hadoop test has failed. exiting..."
+  exit 1
+fi
+
+# Format HDFS on the NameNode:
+
+sudo -u hdfs bin/hdfs namenode -format
+
+# Start the NameNode and DataNode (HDFS) daemons:
+
+sudo -u hdfs sbin/hadoop-daemon.sh start namenode
+sudo -u hdfs sbin/hadoop-daemon.sh start datanode
+
+# Start the ResourceManager and NodeManager (YARN) daemons
+
+sudo -u yarn sbin/yarn-daemon.sh start resourcemanager
+sudo -u yarn sbin/yarn-daemon.sh start nodemanager
+
+# Use the jps command included with the Java JDK to see the Java processes that are running:
+
+sudo jps | egrep 'DataNode|Jps|NameNode|RessourceManager|NodeManager'
+if [ $? -ne 0 ] ; then
+  echo "Something wrong with the output of the jps command."
+  echo "run jps and see by yourself"
+fi
+
+# Create user directories and a tmp directory in HDFS and set the appropriate permissions and ownership:
+
+sudo -u hdfs bin/hadoop fs -mkdir -p /user/${username}
+sudo -u hdfs bin/hadoop fs -chown ${username}: /user/${username}
+sudo -u hdfs bin/hadoop fs -mkdir /tmp
+sudo -u hdfs bin/hadoop fs -chmod 777 /tmp
+
+# Now run the same Pi Estimator example you ran in Step 16. This will now run in pseudo-distributed mode:
+
+bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.2.jar pi 16 1000
+
+# The output you will see in the console will be similar to that in Step 16. Open a browser and go to localhost:8088. You will see the YARN ResourceManager Web UI (which I discuss in Hour 6, “Understanding Data Processing in Hadoop”)
