@@ -1,5 +1,9 @@
 # Introduction
 
+
+/!\ This script is still in DEVELOPMENT. do not use /!\
+
+
 Try it Yourself: Installing Hadoop Using the Apache Release
 
 Script retrieve from the book of the same name so you don't have to type the command.
