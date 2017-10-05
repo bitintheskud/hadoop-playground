@@ -22,19 +22,17 @@
 
 java_vers="1.8.0"
 hadoop_vers="2.7.4"
-username="billythekid"
+username="billytheskid"
 
 
 # do not change the hostname. It will be use later for hdfs command.
 hostnamectl set-hostname hadoopnode0
 
-# Update
-
+# Update and install package
 yum update -y
-yum install -y wget sudo
+yum install -y wget sudo curl
 
 #  Disable SELinux (this is known to cause issues with Hadoop):
-
 cp /etc/selinux/config /etc/selinux/config.orig
 sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
 setenforce 0
@@ -47,18 +45,15 @@ if [ $? -eq 0 ] ; then
 fi
 
 #  Disable IPv6 (this is also known to cause issues with Hadoop)
-
 cp /etc/sysctl.conf /etc/sysctl.conf.orig
 sed -i "\$anet.ipv6.conf.all.disable_ipv6 = 1" /etc/sysctl.conf
 sed -i "\$anet.ipv6.conf.default.disable_ipv6 = 1" /etc/sysctl.conf
 sysctl -p
 
 # Install Java. We will install the OpenJDK, which will install both a JDK and JRE
-
 yum install -y java-${java_vers}
 
 # Test that Java has been successfully installed by running the following command
-
 java -version > /dev/null
 if [ $? -ne 0 ] ; then
     echo "java is not working as exepected. Please check"
@@ -68,7 +63,6 @@ if [ $? -ne 0 ] ; then
 fi
 
 # Locate the installation path for Java, and set the JAVA_HOME environment variable
-
 JAVA_BIN="$(readlink /etc/alternatives/java)"
 export JAVA_HOME="$(dirname ${JAVA_BIN%/*})"
 echo "export JAVA_HOME=${JAVA_HOME}" >> /root/.bashrc
@@ -80,7 +74,6 @@ wget -q "${apache_mirror_url}"/hadoop-${hadoop_vers}.tar.gz
 
 #  Unpack the Hadoop release, move it into a system directory
 #  set an environment variable from the Hadoop home directory
-
 if [ -f hadoop-${hadoop_vers}.tar.gz ] ; then
     tar -xf hadoop-${hadoop_vers}.tar.gz
     mv hadoop-${hadoop_vers} /usr/share/
@@ -94,12 +87,11 @@ fi
 
 
 # Create a directory which we will use as an alternative to the Hadoop configuration directory
-
 mkdir -p /etc/hadoop/conf
 
 #  Create a mapred-site.xml file (I will discuss this later) in the Hadoop configuration directory
-
-cp ${HADOOP_HOME}/etc/hadoop/mapred-site.xml.template ${HADOOP_HOME}/etc/hadoop/mapred-site.xml
+cp etc/mapred-site.xml ${HADOOP_HOME}/etc/hadoop/mapred-site.xml
+#cp ${HADOOP_HOME}/etc/hadoop/mapred-site.xml.template ${HADOOP_HOME}/etc/hadoop/mapred-site.xml
 
 
 #  Add JAVA_HOME environment variable to hadoop-env.sh
@@ -107,29 +99,22 @@ cp ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh ${HADOOP_HOME}/etc/hadoop/hadoop-env.
 sed -i "\$aexport JAVA_HOME=/${JAVA_HOME}/"  ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
 
 #  Create a symbolic link between the Hadoop configuration directory and the /etc/hadoop /conf directory created in Step 10.
-
 ln -s $HADOOP_HOME/etc/hadoop/* /etc/hadoop/conf/
 
 # Create a logs directory for Hadoop:
-
 mkdir $HADOOP_HOME/logs
 
 #  Create users and groups for HDFS and YARN:
-
 groupadd hadoop
 useradd -g hadoop hdfs
 useradd -g hadoop yarn
 
 # Change the group and permissions for the Hadoop release files:
-
 chgrp -R hadoop /usr/share/hadoop
 chmod -R 777 /usr/share/hadoop
 
 #  Run the built in Pi Estimator example included with the Hadoop release.
-
-cd ${HADOOP_HOME}
-
-sudo -u hdfs bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 | grep 'Estimated value of Pi is 3.142' > /dev/null 2>&1
+( cd ${HADOOP_HOME} && ${hdfs_cmd} bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 | grep 'Estimated value of Pi is 3.142' > /dev/null 2>&1)
 if [ $? -ne 0 ] ; then
   echo "Hadoop test successfully tested !"
 else
@@ -137,37 +122,50 @@ else
   exit 1
 fi
 
-# Format HDFS on the NameNode:
+for file in mapred-site.xml hdfs-site.xml yarn-site.xml ; do
+  cp etc/${file} /etc/hadoop/conf/
+  if [ $? -ne 0 ] ; then
+    echo "error while copying ${file} in /etc/hadoop/conf/"
+    exit 1
+done
 
-sudo -u hdfs bin/hdfs namenode -format
+# Let's prepare filesystem
+hdfs_cmd='${hdfs_cmd}'
+yarn_cmd='sudo -u yarn'
+
+# Format HDFS on the NameNode:
+${hdfs_cmd} bin/hdfs namenode -format
 
 # Start the NameNode and DataNode (HDFS) daemons:
-
-sudo -u hdfs sbin/hadoop-daemon.sh start namenode
-sudo -u hdfs sbin/hadoop-daemon.sh start datanode
+${hdfs_cmd} sbin/hadoop-daemon.sh start namenode
+${hdfs_cmd} sbin/hadoop-daemon.sh start datanode
 
 # Start the ResourceManager and NodeManager (YARN) daemons
-
-sudo -u yarn sbin/yarn-daemon.sh start resourcemanager
-sudo -u yarn sbin/yarn-daemon.sh start nodemanager
+${yarn_cmd} sbin/yarn-daemon.sh start resourcemanager
+${yarn_cmd} sbin/yarn-daemon.sh start nodemanager
 
 # Use the jps command included with the Java JDK to see the Java processes that are running:
-
 sudo jps | egrep 'DataNode|Jps|NameNode|RessourceManager|NodeManager'
 if [ $? -ne 0 ] ; then
   echo "Something wrong with the output of the jps command."
   echo "run jps and see by yourself"
 fi
 
-# Create user directories and a tmp directory in HDFS and set the appropriate permissions and ownership:
-
-sudo -u hdfs bin/hadoop fs -mkdir -p /user/${username}
-sudo -u hdfs bin/hadoop fs -chown ${username}: /user/${username}
-sudo -u hdfs bin/hadoop fs -mkdir /tmp
-sudo -u hdfs bin/hadoop fs -chmod 777 /tmp
+# Create user directories and a tmp directory in HDFS and set the appropriate permissions and ownership
+useradd -m ${username}
+${hdfs_cmd} bin/hadoop fs -mkdir -p /user/${username}
+${hdfs_cmd} bin/hadoop fs -chown ${username}: /user/${username}
+${hdfs_cmd} bin/hadoop fs -mkdir /tmp
+${hdfs_cmd} bin/hadoop fs -chmod 777 /tmp
 
 # Now run the same Pi Estimator example you ran in Step 16. This will now run in pseudo-distributed mode:
 
-bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.2.jar pi 16 1000
+bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.2.jar pi 16 1000 > /dev/null 2>&1
+if [ $? -eq 0 ] ; then
+  echo "hadoop seems to be successfully installed !"
+  echo "bye..."
+else
+  echo "Something went wrong during installation. Please check"
+fi
 
 # The output you will see in the console will be similar to that in Step 16. Open a browser and go to localhost:8088. You will see the YARN ResourceManager Web UI (which I discuss in Hour 6, “Understanding Data Processing in Hadoop”)
