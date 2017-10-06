@@ -91,8 +91,7 @@ fi
 mkdir -p /etc/hadoop/conf
 
 #  Create a mapred-site.xml file (I will discuss this later) in the Hadoop configuration directory
-cp etc/mapred-site.xml ${HADOOP_HOME}/etc/hadoop/mapred-site.xml
-#cp ${HADOOP_HOME}/etc/hadoop/mapred-site.xml.template ${HADOOP_HOME}/etc/hadoop/mapred-site.xml
+cp ${HADOOP_HOME}/etc/hadoop/mapred-site.xml.template ${HADOOP_HOME}/etc/hadoop/mapred-site.xml
 
 
 #  Add JAVA_HOME environment variable to hadoop-env.sh
@@ -115,8 +114,7 @@ chgrp -R hadoop /usr/share/hadoop
 chmod -R 777 /usr/share/hadoop
 
 #  Run the built in Pi Estimator example included with the Hadoop release.
-cd ${HADOOP_HOME}
-sudo -u hdfs  bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 | grep '3.142' > /dev/null 2>&1
+cd ${HADOOP_HOME} && (sudo -u hdfs  bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 | grep '3.142' > /dev/null 2>&1)
 if [ $? -eq 0 ] ; then
   echo "Hadoop test successfully tested !"
 else
@@ -136,7 +134,7 @@ echo "Let's try that manually...."
 exit 0
 
 # Let's prepare filesystem
-hdfs_cmd='${hdfs_cmd}'
+hdfs_cmd='sudo -u hdfs'
 yarn_cmd='sudo -u yarn'
 
 # Format HDFS on the NameNode:
