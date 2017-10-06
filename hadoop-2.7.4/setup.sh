@@ -51,7 +51,7 @@ sed -i "\$anet.ipv6.conf.default.disable_ipv6 = 1" /etc/sysctl.conf
 sysctl -p
 
 # Install Java. We will install the OpenJDK, which will install both a JDK and JRE
-yum install -y java-${java_vers}
+yum install -y java-${java_vers}-openjdk-devel
 
 # Test that Java has been successfully installed by running the following command
 java -version > /dev/null
@@ -138,6 +138,7 @@ hdfs_cmd='sudo -u hdfs'
 yarn_cmd='sudo -u yarn'
 
 # Format HDFS on the NameNode:
+cd ${HADOOP_HOME}
 ${hdfs_cmd} bin/hdfs namenode -format
 
 # Start the NameNode and DataNode (HDFS) daemons:
