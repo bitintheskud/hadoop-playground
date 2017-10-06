@@ -75,7 +75,7 @@ wget -O /tmp/hadoop-${hadoop_vers}.tar.gz -q "${apache_mirror_url}"/hadoop-${had
 
 #  Unpack the Hadoop release, move it into a system directory
 #  set an environment variable from the Hadoop home directory
-if [ -f hadoop-${hadoop_vers}.tar.gz ] ; then
+if [ -f /tmp/hadoop-${hadoop_vers}.tar.gz ] ; then
     (cd /tmp ; tar -xf hadoop-${hadoop_vers}.tar.gz)
     (cd /tmp ; mv hadoop-${hadoop_vers} /usr/share/)
     ln -s /usr/share/hadoop-${hadoop_vers} /usr/share/hadoop && export HADOOP_HOME=/usr/share/hadoop
