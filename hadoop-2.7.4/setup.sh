@@ -70,13 +70,14 @@ echo "export JAVA_HOME=${JAVA_HOME}" >> /root/.bashrc
 # Download Hadoop
 #
 apache_mirror_url="http://mirrors.standaloneinstaller.com/apache/hadoop/common/hadoop-${hadoop_vers}/"
-wget -q "${apache_mirror_url}"/hadoop-${hadoop_vers}.tar.gz
+echo "Downloading package hadoop..."
+wget -O /tmp/hadoop-${hadoop_vers}.tar.gz -q "${apache_mirror_url}"/hadoop-${hadoop_vers}.tar.gz
 
 #  Unpack the Hadoop release, move it into a system directory
 #  set an environment variable from the Hadoop home directory
 if [ -f hadoop-${hadoop_vers}.tar.gz ] ; then
-    tar -xf hadoop-${hadoop_vers}.tar.gz
-    mv hadoop-${hadoop_vers} /usr/share/
+    (cd /tmp ; tar -xf hadoop-${hadoop_vers}.tar.gz)
+    (cd /tmp ; mv hadoop-${hadoop_vers} /usr/share/)
     ln -s /usr/share/hadoop-${hadoop_vers} /usr/share/hadoop && export HADOOP_HOME=/usr/share/hadoop
     echo "Done : download & untar hadoop in ${HADOOP_HOME}"
 else
@@ -115,7 +116,7 @@ chmod -R 777 /usr/share/hadoop
 
 #  Run the built in Pi Estimator example included with the Hadoop release.
 cd ${HADOOP_HOME}
-sudo -u hdfs  bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 | grep 'Estimated value of Pi is 3.142'
+sudo -u hdfs  bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 | grep '3.142'
 echo "Press a key to continue..."
 read a
 if [ $? -ne 0 ] ; then
