@@ -114,7 +114,10 @@ chgrp -R hadoop /usr/share/hadoop
 chmod -R 777 /usr/share/hadoop
 
 #  Run the built in Pi Estimator example included with the Hadoop release.
-( cd ${HADOOP_HOME} && ${hdfs_cmd} bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 | grep 'Estimated value of Pi is 3.142' > /dev/null 2>&1)
+cd ${HADOOP_HOME}
+sudo -u hdfs  bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 | grep 'Estimated value of Pi is 3.142'
+echo "Press a key to continue..."
+read a
 if [ $? -ne 0 ] ; then
   echo "Hadoop test successfully tested !"
 else
@@ -127,6 +130,7 @@ for file in mapred-site.xml hdfs-site.xml yarn-site.xml ; do
   if [ $? -ne 0 ] ; then
     echo "error while copying ${file} in /etc/hadoop/conf/"
     exit 1
+  fi
 done
 
 # Let's prepare filesystem
