@@ -116,10 +116,8 @@ chmod -R 777 /usr/share/hadoop
 
 #  Run the built in Pi Estimator example included with the Hadoop release.
 cd ${HADOOP_HOME}
-sudo -u hdfs  bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 | grep '3.142'
-echo "Press a key to continue..."
-read a
-if [ $? -ne 0 ] ; then
+sudo -u hdfs  bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 | grep '3.142' > /dev/null 2>&1
+if [ $? -eq 0 ] ; then
   echo "Hadoop test successfully tested !"
 else
   echo "Hadoop test has failed. exiting..."
