@@ -132,6 +132,9 @@ for file in mapred-site.xml hdfs-site.xml yarn-site.xml ; do
   fi
 done
 
+echo "Let's try that manually...."
+exit 0
+
 # Let's prepare filesystem
 hdfs_cmd='${hdfs_cmd}'
 yarn_cmd='sudo -u yarn'
