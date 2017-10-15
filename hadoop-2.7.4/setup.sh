@@ -30,7 +30,7 @@ hostnamectl set-hostname hadoopnode0
 
 # Update and install package
 yum update -y
-yum install -y wget sudo curl
+yum install -y wget sudo curl firewalld
 
 #  Disable SELinux (this is known to cause issues with Hadoop):
 cp /etc/selinux/config /etc/selinux/config.orig
@@ -122,15 +122,15 @@ else
   exit 1
 fi
 
-for file in mapred-site.xml hdfs-site.xml yarn-site.xml ; do
-  cp etc/${file} /etc/hadoop/conf/
+for file in core-site.xml mapred-site.xml hdfs-site.xml yarn-site.xml ; do
+  cp ./etc/${file} /etc/hadoop/conf/
   if [ $? -ne 0 ] ; then
     echo "error while copying ${file} in /etc/hadoop/conf/"
     exit 1
   fi
 done
 
-echo "Let's try that manually...."
+echo "Let's try that manually now...."
 exit 0
 
 # Let's prepare filesystem
@@ -138,16 +138,15 @@ hdfs_cmd='sudo -u hdfs'
 yarn_cmd='sudo -u yarn'
 
 # Format HDFS on the NameNode:
-cd ${HADOOP_HOME}
-${hdfs_cmd} bin/hdfs namenode -format
+${hdfs_cmd} ${HADOOP_HOME/bin/hdfs namenode -format
 
 # Start the NameNode and DataNode (HDFS) daemons:
-${hdfs_cmd} sbin/hadoop-daemon.sh start namenode
-${hdfs_cmd} sbin/hadoop-daemon.sh start datanode
+${hdfs_cmd} ${HADOOP_HOME}/sbin/hadoop-daemon.sh start namenode
+${hdfs_cmd} ${HADOOP_HOME}/sbin/hadoop-daemon.sh start datanode
 
 # Start the ResourceManager and NodeManager (YARN) daemons
-${yarn_cmd} sbin/yarn-daemon.sh start resourcemanager
-${yarn_cmd} sbin/yarn-daemon.sh start nodemanager
+${yarn_cmd} ${HADOOP_HOME}/sbin/yarn-daemon.sh start resourcemanager
+${yarn_cmd} ${HADOOP_HOME}/sbin/yarn-daemon.sh start nodemanager
 
 # Use the jps command included with the Java JDK to see the Java processes that are running:
 sudo jps | egrep 'DataNode|Jps|NameNode|RessourceManager|NodeManager'
