@@ -20,10 +20,11 @@
 # 3. test
 ***************************************************************
 
-java_vers="1.8.0"
-hadoop_vers="2.7.4"
-username="billytheskid"
-
+JAVA_VERS="1.8.0"
+HADOOP_VERS="2.7.4"
+USERNAME="billytheskid"
+INSTALL_DIR="$(pwd)"
+BASENAME="$(basename $0)"
 
 # do not change the hostname. It will be use later for hdfs command.
 hostnamectl set-hostname hadoopnode0
@@ -51,7 +52,7 @@ sed -i "\$anet.ipv6.conf.default.disable_ipv6 = 1" /etc/sysctl.conf
 sysctl -p
 
 # Install Java. We will install the OpenJDK, which will install both a JDK and JRE
-yum install -y java-${java_vers}-openjdk-devel
+yum install -y java-${JAVA_VERS}-openjdk-devel
 
 # Test that Java has been successfully installed by running the following command
 java -version > /dev/null
@@ -69,20 +70,20 @@ echo "export JAVA_HOME=${JAVA_HOME}" >> /root/.bashrc
 
 # Download Hadoop
 #
-apache_mirror_url="http://mirrors.standaloneinstaller.com/apache/hadoop/common/hadoop-${hadoop_vers}/"
+apache_mirror_url="http://mirrors.standaloneinstaller.com/apache/hadoop/common/hadoop-${HADOOP_VERS}/"
 echo "Downloading package hadoop..."
-wget -O /tmp/hadoop-${hadoop_vers}.tar.gz -q "${apache_mirror_url}"/hadoop-${hadoop_vers}.tar.gz
+wget -O /tmp/hadoop-${HADOOP_VERS}.tar.gz -q "${apache_mirror_url}"/hadoop-${HADOOP_VERS}.tar.gz
 
 #  Unpack the Hadoop release, move it into a system directory
 #  set an environment variable from the Hadoop home directory
-if [ -f /tmp/hadoop-${hadoop_vers}.tar.gz ] ; then
-    (cd /tmp ; tar -xf hadoop-${hadoop_vers}.tar.gz)
-    (cd /tmp ; mv hadoop-${hadoop_vers} /usr/share/)
-    ln -s /usr/share/hadoop-${hadoop_vers} /usr/share/hadoop && export HADOOP_HOME=/usr/share/hadoop
+if [ -f /tmp/hadoop-${HADOOP_VERS}.tar.gz ] ; then
+    (cd /tmp ; tar -xf hadoop-${HADOOP_VERS}.tar.gz)
+    (cd /tmp ; mv hadoop-${HADOOP_VERS} /usr/share/)
+    ln -s /usr/share/hadoop-${HADOOP_VERS} /usr/share/hadoop && export HADOOP_HOME=/usr/share/hadoop
     echo "Done : download & untar hadoop in ${HADOOP_HOME}"
 else
     echo "wget has failed. Try manualy : "
-    echo "    wget "${apache_mirror_url}"/hadoop-${hadoop_vers}.tar.gz"
+    echo "    wget "${apache_mirror_url}"/hadoop-${HADOOP_VERS}.tar.gz"
     exit 1
 fi
 
@@ -114,7 +115,7 @@ chgrp -R hadoop /usr/share/hadoop
 chmod -R 777 /usr/share/hadoop
 
 #  Run the built in Pi Estimator example included with the Hadoop release.
-cd ${HADOOP_HOME} && (sudo -u hdfs  bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${hadoop_vers}.jar pi 16 1000 | grep '3.142' > /dev/null 2>&1)
+cd ${HADOOP_HOME} && (sudo -u hdfs  bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${HADOOP_VERS}.jar pi 16 1000 | grep '3.142' > /dev/null 2>&1)
 if [ $? -eq 0 ] ; then
   echo "Hadoop test successfully tested !"
 else
@@ -122,10 +123,10 @@ else
   exit 1
 fi
 
-for file in core-site.xml mapred-site.xml hdfs-site.xml yarn-site.xml ; do
-  cp ./etc/${file} /etc/hadoop/conf/
+for FILE in core-site.xml mapred-site.xml hdfs-site.xml yarn-site.xml ; do
+  cp ${INSTALL_DIR}/etc/${FILE} /etc/hadoop/conf/
   if [ $? -ne 0 ] ; then
-    echo "error while copying ${file} in /etc/hadoop/conf/"
+    echo "error while copying ${FILE} in /etc/hadoop/conf/"
     exit 1
   fi
 done
@@ -133,20 +134,16 @@ done
 echo "Let's try that manually now...."
 exit 0
 
-# Let's prepare filesystem
-hdfs_cmd='sudo -u hdfs'
-yarn_cmd='sudo -u yarn'
-
 # Format HDFS on the NameNode:
-${hdfs_cmd} ${HADOOP_HOME/bin/hdfs namenode -format
+sudo -u hdfs ${HADOOP_HOME}/bin/hdfs namenode -format
 
 # Start the NameNode and DataNode (HDFS) daemons:
-${hdfs_cmd} ${HADOOP_HOME}/sbin/hadoop-daemon.sh start namenode
-${hdfs_cmd} ${HADOOP_HOME}/sbin/hadoop-daemon.sh start datanode
+sudo -u hdfs ${HADOOP_HOME}/sbin/hadoop-daemon.sh start namenode
+sudo -u hdfs ${HADOOP_HOME}/sbin/hadoop-daemon.sh start datanode
 
 # Start the ResourceManager and NodeManager (YARN) daemons
-${yarn_cmd} ${HADOOP_HOME}/sbin/yarn-daemon.sh start resourcemanager
-${yarn_cmd} ${HADOOP_HOME}/sbin/yarn-daemon.sh start nodemanager
+sudo -u yarn ${HADOOP_HOME}/sbin/yarn-daemon.sh start resourcemanager
+sudo -u yarn ${HADOOP_HOME}/sbin/yarn-daemon.sh start nodemanager
 
 # Use the jps command included with the Java JDK to see the Java processes that are running:
 sudo jps | egrep 'DataNode|Jps|NameNode|RessourceManager|NodeManager'
@@ -156,11 +153,10 @@ if [ $? -ne 0 ] ; then
 fi
 
 # Create user directories and a tmp directory in HDFS and set the appropriate permissions and ownership
-useradd -m ${username}
-${hdfs_cmd} bin/hadoop fs -mkdir -p /user/${username}
-${hdfs_cmd} bin/hadoop fs -chown ${username}: /user/${username}
-${hdfs_cmd} bin/hadoop fs -mkdir /tmp
-${hdfs_cmd} bin/hadoop fs -chmod 777 /tmp
+sudo -u hdfs ${HADOOP_HOME}/bin/hadoop fs -mkdir -p /user/${USERNAME}
+sudo -u hdfs ${HADOOP_HOME}/bin/hadoop fs -chown ${USERNAME}: /user/${USERNAME}
+sudo -u hdfs ${HADOOP_HOME}/bin/hadoop fs -mkdir /tmp
+sudo -u hdfs ${HADOOP_HOME}/bin/hadoop fs -chmod 777 /tmp
 
 # Now run the same Pi Estimator example you ran in Step 16. This will now run in pseudo-distributed mode:
 

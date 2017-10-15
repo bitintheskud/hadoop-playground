@@ -8,4 +8,4 @@ sudo systemctl start firewalld.service
 #sudo firewall-cmd --zone=public --permanent --add-source=YOUR_IP/32
 #sudo firewall-cmd --zone=public --permanent --add-source=YOUR_NETWORK/MASK  
 
-#sudo firewall-cmd --zone=public --permanent --add-port=8020-8050
+#sudo firewall-cmd --zone=public --permanent --add-port=8020,8088,8030,8031,8032,8033
