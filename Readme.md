@@ -1,25 +1,28 @@
 # Introduction
 
-
 /!\ This script is still in DEVELOPMENT. do not use /!\
 
-
 Try it Yourself: Installing Hadoop Using the Apache Release
-
-Script retrieve from the book of the same name so you don't have to type the command.
 
 The script will install a pseudo-distributed mode Hadoop cluster using the latest Hadoop release downloaded from hadoop.apache.org.
 
 
 # Prerequisites
 
-You need the following specifications :
+This script has been tested in the following environment : 
 
-  - Red Hat Enterprise Linux 7.2 (The installation steps would be similar using other Linux distributions such as Ubuntu)
+This is a big config for a lab environnement and should be able to run the pseudo cluster on a smaller node.
+
+  - Cloud provider : OVH
+  - CentOS 7.4.1708 
   - 2 CPU cores
-  - 8GB RAM
-  - 30GB HDD
+  - 32GB RAM
+  - 240GO DISK
 
 # How to use the scripts
 
-Just ran the script on your host.
+Run as root.
+
+```
+$ git clone https://github.com/bitintheskud/hadoop-playground.git
+$ cd  hadoop-playgroup && bash ./setup.sh```
