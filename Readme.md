@@ -25,4 +25,5 @@ Run as root.
 
 ```
 $ git clone https://github.com/bitintheskud/hadoop-playground.git
-$ cd  hadoop-playgroup && bash ./setup.sh```
+$ cd  hadoop-playground && bash ./setup.sh
+```
