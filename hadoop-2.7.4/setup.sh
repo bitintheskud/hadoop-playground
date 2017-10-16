@@ -119,8 +119,8 @@ chgrp -R hadoop /usr/share/hadoop
 chmod -R 777 /usr/share/hadoop
 
 #  Run the built in Pi Estimator example included with the Hadoop release.
-echo "Runnning a map reduce job to check installation before resuming configuration.."
-sudo -u hdfs ${HADOOP_HOME}/bin/hadoop jar "${HADOOP_HOME}/share/hadoop/mapreduce/hadoop-mapreduce-examples-${HADOOP_VERS}.jar" pi 16 1000 > /dev/null 2>&1
+echo "Runnning a map reduce job as root to check installation before resuming configuration.."
+${HADOOP_HOME}/bin/hadoop jar "${HADOOP_HOME}/share/hadoop/mapreduce/hadoop-mapreduce-examples-${HADOOP_VERS}.jar" pi 16 1000 > /dev/null 2>&1
 if [ $? -eq 0 ] ; then
   echo "Hadoop test successfully tested !"
 else
@@ -137,7 +137,11 @@ for FILE in core-site.xml mapred-site.xml hdfs-site.xml yarn-site.xml ; do
 done
 
 echo "Format HDFS on the NameNode."
-sudo -u hdfs ${HADOOP_HOME}/bin/hdfs namenode -format
+sudo -u hdfs ${HADOOP_HOME}/bin/hdfs namenode -format > /dev/null 2>&1
+if [ $? -ne 0 ] ; then
+    echo "fail to format hdfs : sudo -u hdfs ${HADOOP_HOME}/bin/hdfs namenode -format"
+    exit 1
+fi
 
 echo "Start the NameNode and DataNode (HDFS) daemons."
 sudo -u hdfs ${HADOOP_HOME}/sbin/hadoop-daemon.sh start namenode
