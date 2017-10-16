@@ -122,7 +122,7 @@ chmod -R 777 /usr/share/hadoop
 echo "Runnning a map reduce job as root to check installation before resuming configuration.."
 ${HADOOP_HOME}/bin/hadoop jar "${HADOOP_HOME}/share/hadoop/mapreduce/hadoop-mapreduce-examples-${HADOOP_VERS}.jar" pi 16 1000 > /dev/null 2>&1
 if [ $? -eq 0 ] ; then
-  echo "Hadoop test successfully tested !"
+  echo "Hadoop successfully tested !"
 else
   echo "Hadoop test has failed. exiting..."
   exit 1
@@ -169,7 +169,7 @@ sudo -u hdfs ${HADOOP_HOME}/bin/hadoop fs -mkdir /tmp
 sudo -u hdfs ${HADOOP_HOME}/bin/hadoop fs -chmod 777 /tmp
 
 # Now run the same Pi Estimator example you ran in Step 16. This will now run in pseudo-distributed mode:
-echo "Running another pi mapreduce test..."
+echo "Running pi mapreduce test as hdfs..."
 sudo -u hdfs ${HADOOP_HOME}/bin/hadoop jar ${HADOOP_HOME}/share/hadoop/mapreduce/hadoop-mapreduce-examples-${HADOOP_VERS}.jar pi 16 1000 > /dev/null 2>&1
 if [ $? -eq 0 ] ; then
   echo "Ok hadoop seems to be successfully installed !"
