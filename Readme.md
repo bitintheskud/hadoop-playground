@@ -40,7 +40,7 @@ $ cd  hadoop-playground && bash ./setup.sh
 The script is basically a list of sequential command. 
 There's a lot to improve and I don't have much time to spend on it.
 
-[ ] add source / conf file 
-[ ] re-engineer with lib, functions. 
-[ ] Support other distrib (debian)
+  [ ] add source / conf file 
+  [ ] re-engineer with lib, functions. 
+  [ ] Support other distrib (debian)
 
