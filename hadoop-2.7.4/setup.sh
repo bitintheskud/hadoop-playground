@@ -2,15 +2,12 @@
 #
 # Author : @bitintheskud
 # Date   : 4 oct 2017
-# largely inspired from the book "Sams Teach Yourself Hadoop in 24 Hours"
-# Thanks to Jeffrey Aven :)
 #
 # run as root on freshly install test server with centos > 7.4
 # this is lab script to play around with hadoop.
 # DO NOT RUN that in production or you'll be damn for eternity (and surely fired).
-
-
-***************************************************************
+#
+#***************************************************************
 #
 # /!\ THIS SCRIPT IS STILL IN DEVELOPMENT. DO NOT USE /!\
 #
@@ -18,16 +15,18 @@
 # 1. create an autoextract script. see https://github.com/megastep/makeself
 # 2. add copie etc/*.xml to hadoop conf dir
 # 3. test
-***************************************************************
+#***************************************************************
 
 JAVA_VERS="1.8.0"
 HADOOP_VERS="2.7.4"
+# Usename to create and configure under hadoop
 USERNAME="billytheskid"
 INSTALL_DIR="$(pwd)"
 BASENAME="$(basename $0)"
+APACHE_MIRROR_URL="http://mirrors.standaloneinstaller.com/apache/hadoop/common/hadoop-${HADOOP_VERS}/"
 
 # do not change the hostname. It will be use later for hdfs command.
-hostnamectl set-hostname hadoopnode0
+hostnamectl set-hostname "hadoopnode0"
 
 # Update and install package
 yum update -y
@@ -68,22 +67,27 @@ JAVA_BIN="$(readlink /etc/alternatives/java)"
 export JAVA_HOME="$(dirname ${JAVA_BIN%/*})"
 echo "export JAVA_HOME=${JAVA_HOME}" >> /root/.bashrc
 
-# Download Hadoop
+# Download Hadoop pkg
 #
-apache_mirror_url="http://mirrors.standaloneinstaller.com/apache/hadoop/common/hadoop-${HADOOP_VERS}/"
-echo "Downloading package hadoop..."
-wget -O /tmp/hadoop-${HADOOP_VERS}.tar.gz -q "${apache_mirror_url}"/hadoop-${HADOOP_VERS}.tar.gz
+TMP_FILE="/tmp/hadoop-${HADOOP_VERS}.tar.gz" 
+FILE_TO_DOWNLOAD="${APACHE_MIRROR_URL}/hadoop-${HADOOP_VERS}.tar.gz"
+if [ -f /tmp/hadoop-${HADOOP_VERS}.tar.gz ] ; then
+    echo "File exist, skip downloading"
+else
+    echo "Downloading package hadoop...wait (timeout is 120s)"
+    wget -O "${TMP_FILE}" --timeout=120 -q "${FILE_TO_DOWNLOAD}" 
+fi
 
 #  Unpack the Hadoop release, move it into a system directory
 #  set an environment variable from the Hadoop home directory
-if [ -f /tmp/hadoop-${HADOOP_VERS}.tar.gz ] ; then
-    (cd /tmp ; tar -xf hadoop-${HADOOP_VERS}.tar.gz)
+if [ -f "${TMP_FILE}" ] ; then
+    (cd /tmp ; tar -xf "${TMP_FILE}")
     (cd /tmp ; mv hadoop-${HADOOP_VERS} /usr/share/)
-    ln -s /usr/share/hadoop-${HADOOP_VERS} /usr/share/hadoop && export HADOOP_HOME=/usr/share/hadoop
+    ln -s /usr/share/hadoop-${HADOOP_VERS} /usr/share/hadoop && export HADOOP_HOME="/usr/share/hadoop"
     echo "Done : download & untar hadoop in ${HADOOP_HOME}"
 else
     echo "wget has failed. Try manualy : "
-    echo "    wget "${apache_mirror_url}"/hadoop-${HADOOP_VERS}.tar.gz"
+    echo "    wget "${APACHE_MIRROR_URL}"/hadoop-${HADOOP_VERS}.tar.gz"
     exit 1
 fi
 
@@ -115,7 +119,8 @@ chgrp -R hadoop /usr/share/hadoop
 chmod -R 777 /usr/share/hadoop
 
 #  Run the built in Pi Estimator example included with the Hadoop release.
-cd ${HADOOP_HOME} && (sudo -u hdfs  bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-${HADOOP_VERS}.jar pi 16 1000 | grep '3.142' > /dev/null 2>&1)
+echo "Runnning a map reduce job to check installation before resuming configuration.."
+sudo -u hdfs ${HADOOP_HOME}/bin/hadoop jar "${HADOOP_HOME}/share/hadoop/mapreduce/hadoop-mapreduce-examples-${HADOOP_VERS}.jar" pi 16 1000 > /dev/null 2>&1
 if [ $? -eq 0 ] ; then
   echo "Hadoop test successfully tested !"
 else
@@ -131,41 +136,40 @@ for FILE in core-site.xml mapred-site.xml hdfs-site.xml yarn-site.xml ; do
   fi
 done
 
-echo "Let's try that manually now...."
-exit 0
-
-# Format HDFS on the NameNode:
+echo "Format HDFS on the NameNode."
 sudo -u hdfs ${HADOOP_HOME}/bin/hdfs namenode -format
 
-# Start the NameNode and DataNode (HDFS) daemons:
+echo "Start the NameNode and DataNode (HDFS) daemons."
 sudo -u hdfs ${HADOOP_HOME}/sbin/hadoop-daemon.sh start namenode
 sudo -u hdfs ${HADOOP_HOME}/sbin/hadoop-daemon.sh start datanode
 
-# Start the ResourceManager and NodeManager (YARN) daemons
+echo "Start the ResourceManager and NodeManager (YARN) daemons"
 sudo -u yarn ${HADOOP_HOME}/sbin/yarn-daemon.sh start resourcemanager
 sudo -u yarn ${HADOOP_HOME}/sbin/yarn-daemon.sh start nodemanager
 
 # Use the jps command included with the Java JDK to see the Java processes that are running:
-sudo jps | egrep 'DataNode|Jps|NameNode|RessourceManager|NodeManager'
+echo "Checking daemons status."
+sudo jps | egrep 'DataNode|Jps|NameNode|RessourceManager|NodeManager' > /dev/null 2>&1
 if [ $? -ne 0 ] ; then
   echo "Something wrong with the output of the jps command."
-  echo "run jps and see by yourself"
+  echo "run the command jps to check which one has not started and debug :("
+else
+  echo "All deamons are started...great !"
 fi
 
 # Create user directories and a tmp directory in HDFS and set the appropriate permissions and ownership
+echo "Creating user directory for ${USERNAME}"
 sudo -u hdfs ${HADOOP_HOME}/bin/hadoop fs -mkdir -p /user/${USERNAME}
 sudo -u hdfs ${HADOOP_HOME}/bin/hadoop fs -chown ${USERNAME}: /user/${USERNAME}
 sudo -u hdfs ${HADOOP_HOME}/bin/hadoop fs -mkdir /tmp
 sudo -u hdfs ${HADOOP_HOME}/bin/hadoop fs -chmod 777 /tmp
 
 # Now run the same Pi Estimator example you ran in Step 16. This will now run in pseudo-distributed mode:
-
-bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.2.jar pi 16 1000 > /dev/null 2>&1
+echo "Running another pi mapreduce test..."
+sudo -u hdfs ${HADOOP_HOME}/bin/hadoop jar ${HADOOP_HOME}/share/hadoop/mapreduce/hadoop-mapreduce-examples-${HADOOP_VERS}.jar pi 16 1000 > /dev/null 2>&1
 if [ $? -eq 0 ] ; then
-  echo "hadoop seems to be successfully installed !"
-  echo "bye..."
+  echo "Ok hadoop seems to be successfully installed !"
+  echo "Yarn available on port <your ip>:8088"
 else
   echo "Something went wrong during installation. Please check"
 fi
-
-# The output you will see in the console will be similar to that in Step 16. Open a browser and go to localhost:8088. You will see the YARN ResourceManager Web UI (which I discuss in Hour 6, “Understanding Data Processing in Hadoop”)
