@@ -1,6 +1,6 @@
 # Introduction
 
-/!\ This script is still in DEVELOPMENT. do not use /!\
+Script has been tested and it's working (see below). Enjoy !
 
 Try it Yourself: Installing Hadoop Using the Apache Release
 
